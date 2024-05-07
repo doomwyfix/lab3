@@ -49,12 +49,18 @@ class SetData(server.App):
         },
         {
             "type": 'text',
-            "label": 'Year',
-            "key": 'year',
-            "value": '',
+            "label": 'Year min',  
+            "key": 'year_min',  
+            "value": '',  
             "action_id": "update_data"
         },
-
+        {
+            "type": 'text',
+            "label": 'Year max',  
+            "key": 'year_max',  
+            "value": '',  
+            "action_id": "update_data"
+        },
         {
             "type": 'text',
             "label": 'Week min',
@@ -63,7 +69,6 @@ class SetData(server.App):
             "min_value": 1,
             "action_id": "update_data"
         },
-
         {
             "type": 'text',
             "label": 'Week max',
@@ -104,32 +109,32 @@ class SetData(server.App):
         df = pd.read_csv(full_path)
         return df
 
-
-
     def getTable(self, params):
         df = self.getData(params)
         region = params['region']
-        year = int(params['year'])
+        year_min = int(params['year_min'])
+        year_max = int(params['year_max'])
         week_min = int(params['week_min'])
         week_max = int(params['week_max'])
-        if week_max < week_min:
-            return pd.DataFrame({'message': ['Будь ласка, введіть правильні дані для Week min і Week max.']})
-        data = df[(df['area'] == region) & (df['Year'] == year) & (df['Week'] >= week_min) & (df['Week'] <= week_max)]
+        if week_max < week_min or year_max < year_min:  # додамо перевірку на коректність введених даних
+            return pd.DataFrame({'message': ['Будь ласка, введіть правильні дані для Week min і Week max або Year min і Year max.']})
+        data = df[(df['area'] == region) & (df['Year'].between(year_min, year_max)) & (df['Week'] >= week_min) & (df['Week'] <= week_max)]
         columns = ['Year', 'Week', params['NOAA'], 'area']
         return data.loc[:, columns]
 
     def getPlot(self, params):
         region = params['region']
-        year = int(params['year'])
+        year_min = int(params['year_min'])
+        year_max = int(params['year_max'])
         ticker = params['NOAA']
         week_min = int(params['week_min'])
         week_max = int(params['week_max'])
         df = self.getData(params)
-        data = df[(df['area'] == region) & (df['Year'] == year) & (df['Week'] >= week_min) & (df['Week'] <= week_max)]
-        plt_obj = data.plot(x='Week', y=ticker)
+        data = df[(df['area'] == region) & (df['Year'].between(year_min, year_max)) & (df['Week'] >= week_min) & (df['Week'] <= week_max)]
+        plt_obj = data.pivot(index='Week', columns='Year', values=ticker).plot()
         plt_obj.set_ylabel("NOAA дані")
         plt_obj.set_xlabel("Тиждень")
-        plt_obj.set_title(f"Графік для регіону {region} у {year} році для вказаних тижнів")
+        plt_obj.set_title(f"Графік для регіону {region} у {year_min}-{year_max} роках для вказаних тижнів")
         plt_obj.set_xticks(np.arange(week_min, week_max + 1, 1))
         plot = plt_obj.get_figure()
         return plot
