@@ -139,6 +139,7 @@ class SetData(server.App):
         plot = plt_obj.get_figure()
         return plot
     
+
     
 if __name__ == '__main__':
     app = SetData()
